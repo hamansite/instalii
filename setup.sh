@@ -1,45 +1,134 @@
-# بررسی انتخاب کاربر
+#!/bin/bash
+
+STREAMING_CHUNK:Initializing the script and basic settings...
+
+Clear the screen for a clean start
+
+clear
+
+STREAMING_CHUNK:Defining color codes for output styling...
+
+Define colors for better UI in terminal
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+STREAMING_CHUNK:Defining the main menu function...
+
+Function to display the menu
+
+show_menu() {
+echo -e "${CYAN}=================================================${NC}"
+echo -e "${YELLOW}           Server Management Script            ${NC}"
+echo -e "${CYAN}=================================================${NC}"
+echo -e "Please select an option:"
+echo -e "${GREEN}1)${NC} Install PasarGuard Node"
+echo -e "${GREEN}2)${NC} Install Marzban Node"
+echo -e "${GREEN}3)${NC} Install nload (Network Traffic Monitor)"
+echo -e "${GREEN}4)${NC} Update System Packages"
+echo -e "${RED}0)${NC} Exit"
+echo -e "${CYAN}=================================================${NC}"
+}
+
+STREAMING_CHUNK:Defining function to handle PasarGuard Node installation...
+
+Function to install PasarGuard Node
+
+install_pasarguard() {
+echo -e "${YELLOW}Installing PasarGuard Node...${NC}"
+sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pg-node.sh)" @ install
+echo -e "${GREEN}PasarGuard Node installation process completed.${NC}"
+sleep 2
+}
+
+STREAMING_CHUNK:Defining function to handle Marzban Node installation...
+
+Function to install Marzban Node
+
+install_marzban() {
+echo -e "${YELLOW}Installing Marzban Node...${NC}"
+bash <(curl -fsSL https://raw.githubusercontent.com/omidkarimi7945/marzba/main/install-marzban-node.sh)
+echo -e "${GREEN}Marzban Node installation process completed.${NC}"
+sleep 2
+}
+
+STREAMING_CHUNK:Defining function to handle nload installation...
+
+Function to install nload
+
+install_nload() {
+echo -e "${YELLOW}Installing nload...${NC}"
+if [ -x "$(command -v apt-get)" ]; then
+sudo apt-get update
+sudo apt-get install -y nload
+elif [ -x "$(command -v yum)" ]; then
+sudo yum install -y epel-release
+sudo yum install -y nload
+else
+echo -e "${RED}Package manager not found. Please install nload manually.${NC}"
+fi
+echo -e "${GREEN}nload installation process completed.${NC}"
+sleep 2
+}
+
+STREAMING_CHUNK:Defining function to update system packages...
+
+Function to update system packages
+
+update_system() {
+echo -e "${YELLOW}Updating system packages...${NC}"
+if [ -x "$(command -v apt-get)" ]; then
+sudo apt-get update && sudo apt-get upgrade -y
+elif [ -x "$(command -v yum)" ]; then
+sudo yum update -y
+else
+echo -e "${RED}Package manager not found. Cannot update automatically.${NC}"
+fi
+echo -e "${GREEN}System update process completed.${NC}"
+sleep 2
+}
+
+STREAMING_CHUNK:Running the main loop to process user input...
+
+Main loop
+
+while true; do
+show_menu
+read -p "Enter your choice [0-4]: " choice
+
 case $choice in
-    # STREAMING_CHUNK:Handling PasarGuard installation...
     1)
-        echo -e "\n${YELLOW}در حال نصب نود پاسارگارد (PasarGuard Node)...${NC}\n"
-        sudo bash -c "$(curl -sL https://github.com/PasarGuard/scripts/raw/main/pg-node.sh)" @ install
+        install_pasarguard
         ;;
-        
-    # STREAMING_CHUNK:Handling Marzban installation...
     2)
-        echo -e "\n${YELLOW}در حال نصب نود مرزبان (Marzban Node)...${NC}\n"
-        bash <(curl -fsSL https://raw.githubusercontent.com/omidkarimi7945/marzba/main/install-marzban-node.sh)
+        install_marzban
         ;;
-        
-    # STREAMING_CHUNK:Handling nload installation...
     3)
-        echo -e "\n${YELLOW}در حال نصب nload (Network Traffic Monitor)...${NC}\n"
-        # فرض بر این است که از اوبونتو/دبیان استفاده می‌کنید
-        sudo apt update && sudo apt install nload -y
-        echo -e "\n${GREEN}نصب nload با موفقیت انجام شد! برای استفاده کافیست در ترمینال بنویسید: nload${NC}\n"
+        install_nload
         ;;
-        
-    # STREAMING_CHUNK:Handling server update...
     4)
-        echo -e "\n${YELLOW}در حال آپدیت و ارتقا سرور...${NC}\n"
-        sudo apt update && sudo apt upgrade -y
-        echo -e "\n${GREEN}سرور با موفقیت آپدیت شد!${NC}\n"
+        update_system
         ;;
-        
-    # STREAMING_CHUNK:Handling script exit...
     0)
-        echo -e "\n${GREEN}خروج از اسکریپت. موفق باشید!${NC}\n"
+        echo -e "${GREEN}Exiting... Have a good day!${NC}"
         exit 0
         ;;
-        
-    # STREAMING_CHUNK:Handling invalid inputs...
     *)
-        echo -e "\n${RED}گزینه نامعتبر است! لطفا فقط عددهای داخل منو را وارد کنید.${NC}\n"
+        echo -e "${RED}Invalid option. Please try again.${NC}"
+        sleep 1
+        clear
         ;;
 esac
 
-# STREAMING_CHUNK:Pausing before returning to menu...
-# توقف برنامه تا کاربر نتیجه را ببیند و سپس اینتر بزند تا منو دوباره لود شود
-echo ""
-read -p "برای بازگشت به منو دکمه Enter را بزنید..."
+# Prompt before showing menu again (except on exit)
+if [ "$choice" != "0" ]; then
+    echo -e "\nPress Enter to return to the main menu..."
+    read
+    clear
+fi
+
+
+done
