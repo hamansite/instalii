@@ -8,7 +8,7 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-BOT_TOKEN="8752327864:AAE7SgGLk345vU9czspxfxVy6VcKuueKNhA"
+BOT_TOKEN="YOUR_BOT_TOKEN"
 CHAT_ID="-1002854648873"
 TOPIC_FILE="$HOME/.server_tg_topic_id"
 
@@ -20,30 +20,27 @@ fi
 }
 
 setup_telegram_topic() {
-if [ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" ] \vert{}\vert{} [ -z "$BOT_TOKEN" ]; then
+if [[ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
 echo -e "${RED}Warning: BOT_TOKEN is not set. Telegram logging will be disabled.${NC}"
 sleep 2
 return
 fi
 
 SERVER_IP=$(curl -s https://api.ipify.org)
-if [ -z "$SERVER_IP" ]; then
-    SERVER_IP=$(curl -s https://ipv4.icanhazip.com)
-fi
+[[ -z "$SERVER_IP" ]] && SERVER_IP=$(curl -s https://ipv4.icanhazip.com)
 
-if [ ! -f "$TOPIC_FILE" ]; then
+if [[ ! -f "$TOPIC_FILE" ]]; then
     echo -e "${YELLOW}Creating Telegram Topic for Server: $SERVER_IP...${NC}"
-    RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/createForumTopic" \
-        -d "chat_id=${CHAT_ID}" \
-        -d "name=${SERVER_IP}")
     
-    THREAD_ID=$(echo "$RESPONSE" | jq -r '.result.message_thread_id')
+    RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/createForumTopic" -d "chat_id=${CHAT_ID}" -d "name=${SERVER_IP}")
+    THREAD_ID=$(echo "$RESPONSE" | jq -r '.result.message_thread_id // empty')
     
-    if [ "$THREAD_ID" != "null" ] && [ -n "$THREAD_ID" ]; then
+    if [[ -n "$THREAD_ID" && "$THREAD_ID" != "null" ]]; then
         echo "$THREAD_ID" > "$TOPIC_FILE"
         send_tg_msg "✅ *Server Connected*\nIP: \`$SERVER_IP\`\nNew topic created successfully."
     else
-        echo -e "${RED}Failed to create topic. Is the bot admin in the group?${NC}"
+        echo -e "${RED}Failed to create topic. Bot will send logs to the main group instead.${NC}"
+        echo -e "${YELLOW}(Hint: Ensure the bot is an Admin and has 'Manage Topics' permission)${NC}"
         sleep 3
     fi
 fi
@@ -53,16 +50,19 @@ fi
 
 send_tg_msg() {
 local MSG="$1"
-if [ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" ] || [ -z "$BOT_TOKEN" ] \vert{}\vert{} [ ! -f "$TOPIC_FILE" ]; then
+if [[ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
 return
 fi
-local THREAD_ID=$(cat "$TOPIC_FILE")
-curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
--d "chat_id=${CHAT_ID}" \
--d "message_thread_id=${THREAD_ID}" \
--d "text=${MSG}" 
 
--d "parse_mode=Markdown" > /dev/null
+if [[ -f "$TOPIC_FILE" ]]; then
+    local THREAD_ID=$(cat "$TOPIC_FILE")
+    curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=${CHAT_ID}" -d "message_thread_id=${THREAD_ID}" -d "text=${MSG}" -d "parse_mode=Markdown" > /dev/null 2>&1
+else
+    # Fallback: Send to the main chat if topic creation failed
+    curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=${CHAT_ID}" -d "text=${MSG}" -d "parse_mode=Markdown" > /dev/null 2>&1
+fi
+
+
 }
 
 show_menu() {
