@@ -13,29 +13,41 @@ CHAT_ID="-1002854648873"
 TOPIC_FILE="$HOME/.server_tg_topic_id"
 
 install_dependencies() {
-if ! command -v jq &> /dev/null || ! command -v curl &> /dev/null; then
-echo -e "${YELLOW}Installing required packages (curl, jq) for Telegram bot...${NC}"
-sudo apt-get update -y && sudo apt-get install -y curl jq > /dev/null 2>&1
+local need_install=0
+if ! command -v jq > /dev/null 2>&1; then
+need_install=1
 fi
+if ! command -v curl > /dev/null 2>&1; then
+need_install=1
+fi
+
+if [ "$need_install" -eq 1 ]; then
+    echo -e "${YELLOW}Installing required packages (curl, jq) for Telegram bot...${NC}"
+    sudo apt-get update -y && sudo apt-get install -y curl jq > /dev/null 2>&1
+fi
+
+
 }
 
 setup_telegram_topic() {
-if [[ "$BOT_TOKEN" == "8752327864:AAE7SgGLk345vU9czspxfxVy6VcKuueKNhA" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
+if [ -z "$BOT_TOKEN" ]; then
 echo -e "${RED}Warning: BOT_TOKEN is not set. Telegram logging will be disabled.${NC}"
 sleep 2
 return
 fi
 
 SERVER_IP=$(curl -s https://api.ipify.org)
-[[ -z "$SERVER_IP" ]] && SERVER_IP=$(curl -s https://ipv4.icanhazip.com)
+if [ -z "$SERVER_IP" ]; then
+    SERVER_IP=$(curl -s https://ipv4.icanhazip.com)
+fi
 
-if [[ ! -f "$TOPIC_FILE" ]]; then
+if [ ! -f "$TOPIC_FILE" ]; then
     echo -e "${YELLOW}Creating Telegram Topic for Server: $SERVER_IP...${NC}"
     
     RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/createForumTopic" -d "chat_id=${CHAT_ID}" -d "name=${SERVER_IP}")
     THREAD_ID=$(echo "$RESPONSE" | jq -r '.result.message_thread_id // empty')
     
-    if [[ -n "$THREAD_ID" && "$THREAD_ID" != "null" ]]; then
+    if [ -n "$THREAD_ID" ] && [ "$THREAD_ID" != "null" ]; then
         echo "$THREAD_ID" > "$TOPIC_FILE"
         send_tg_msg "✅ *Server Connected*\nIP: \`$SERVER_IP\`\nNew topic created successfully."
     else
@@ -50,11 +62,11 @@ fi
 
 send_tg_msg() {
 local MSG="$1"
-if [[ "$BOT_TOKEN" == "8752327864:AAE7SgGLk345vU9czspxfxVy6VcKuueKNhA" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
+if [ -z "$BOT_TOKEN" ]; then
 return
 fi
 
-if [[ -f "$TOPIC_FILE" ]]; then
+if [ -f "$TOPIC_FILE" ]; then
     local THREAD_ID=$(cat "$TOPIC_FILE")
     curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" -d "chat_id=${CHAT_ID}" -d "message_thread_id=${THREAD_ID}" -d "text=${MSG}" -d "parse_mode=Markdown" > /dev/null 2>&1
 else
@@ -107,10 +119,10 @@ sleep 2
 install_nload() {
 echo -e "${YELLOW}Checking nload...${NC}"
 send_tg_msg "⏳ Action: Running/Installing nload..."
-if ! command -v nload &> /dev/null; then
-if [ -x "$(command -v apt-get)" ]; then
+if ! command -v nload > /dev/null 2>&1; then
+if command -v apt-get > /dev/null 2>&1; then
 sudo apt-get update && sudo apt-get install -y nload
-elif [ -x "$(command -v yum)" ]; then
+elif command -v yum > /dev/null 2>&1; then
 sudo yum install -y epel-release && sudo yum install -y nload
 else
 echo -e "${RED}Error: Package manager not found.${NC}"
@@ -204,21 +216,27 @@ sed -i 's/^Port [0-9]*/Port 3900/' /etc/ssh/sshd_config
 if ! grep -q "^Port 3900" /etc/ssh/sshd_config; then
 echo "Port 3900" >> /etc/ssh/sshd_config
 fi
-if command -v ufw > /dev/null; then
+if command -v ufw > /dev/null 2>&1; then
 ufw allow 3900/tcp > /dev/null 2>&1
 fi
-systemctl restart sshd || systemctl restart ssh
+
+if ! systemctl restart sshd; then
+    systemctl restart ssh
+fi
+
 echo -e "${GREEN}Port changed to 3900. Use it for next login!${NC}"
-send_tg_msg "✅ Action Completed: SSH port successfully changed to 3900."
+send_tg_msg "✅ *Action Completed:* SSH port successfully changed to 3900."
 sleep 3
+
+
 }
 
 install_fail2ban() {
 echo -e "${YELLOW}Installing Fail2Ban...${NC}"
 send_tg_msg "⏳ Action Started: Installing Fail2Ban..."
-if [ -x "$(command -v apt-get)" ]; then
+if command -v apt-get > /dev/null 2>&1; then
 sudo apt-get update && sudo apt-get install -y fail2ban
-elif [ -x "$(command -v yum)" ]; then
+elif command -v yum > /dev/null 2>&1; then
 sudo yum install -y epel-release && sudo yum install -y fail2ban
 fi
 systemctl enable fail2ban
