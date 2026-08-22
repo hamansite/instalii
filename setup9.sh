@@ -50,7 +50,7 @@ fi
 
 send_tg_msg() {
 local MSG="$1"
-if [[ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
+if [[ "$BOT_TOKEN" == "8752327864:AAE7SgGLk345vU9czspxfxVy6VcKuueKNhA" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
 return
 fi
 
