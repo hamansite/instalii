@@ -2,29 +2,15 @@
 
 clear
 
-STREAMING_CHUNK: Defining color codes for the interface...
-
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-STREAMING_CHUNK: Setting up Telegram Bot variables...
-
-==========================================
-
-TELEGRAM BOT CONFIGURATION
-
-==========================================
-
-BOT_TOKEN="8752327864:AAE7SgGLk345vU9czspxfxVy6VcKuueKNhA" # <--- توکن ربات خود را اینجا قرار دهید
+BOT_TOKEN="YOUR_BOT_TOKEN"
 CHAT_ID="-1002854648873"
 TOPIC_FILE="$HOME/.server_tg_topic_id"
-
-==========================================
-
-STREAMING_CHUNK: Checking and installing required dependencies (curl, jq)...
 
 install_dependencies() {
 if ! command -v jq &> /dev/null || ! command -v curl &> /dev/null; then
@@ -33,31 +19,26 @@ sudo apt-get update -y && sudo apt-get install -y curl jq > /dev/null 2>&1
 fi
 }
 
-STREAMING_CHUNK: Creating Telegram topic and saving thread ID...
-
 setup_telegram_topic() {
-if [ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" ]; then
+if [ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" ] \vert{}\vert{} [ -z "$BOT_TOKEN" ]; then
 echo -e "${RED}Warning: BOT_TOKEN is not set. Telegram logging will be disabled.${NC}"
 sleep 2
 return
 fi
 
-# Fetch Server IP
 SERVER_IP=$(curl -s https://api.ipify.org)
 if [ -z "$SERVER_IP" ]; then
     SERVER_IP=$(curl -s https://ipv4.icanhazip.com)
 fi
 
-# Create Topic if it doesn't exist
 if [ ! -f "$TOPIC_FILE" ]; then
     echo -e "${YELLOW}Creating Telegram Topic for Server: $SERVER_IP...${NC}"
     RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/createForumTopic" \
         -d "chat_id=${CHAT_ID}" \
         -d "name=${SERVER_IP}")
-
-    # Parse Thread ID
+    
     THREAD_ID=$(echo "$RESPONSE" | jq -r '.result.message_thread_id')
-
+    
     if [ "$THREAD_ID" != "null" ] && [ -n "$THREAD_ID" ]; then
         echo "$THREAD_ID" > "$TOPIC_FILE"
         send_tg_msg "✅ *Server Connected*\nIP: \`$SERVER_IP\`\nNew topic created successfully."
@@ -70,24 +51,19 @@ fi
 
 }
 
-STREAMING_CHUNK: Defining the helper function to send Telegram messages...
-
 send_tg_msg() {
 local MSG="$1"
-if [ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" ] \vert{}\vert{} [ ! -f "$TOPIC_FILE" ]; then
+if [ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" ] || [ -z "$BOT_TOKEN" ] \vert{}\vert{} [ ! -f "$TOPIC_FILE" ]; then
 return
 fi
 local THREAD_ID=$(cat "$TOPIC_FILE")
 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
 -d "chat_id=${CHAT_ID}" \
--d "message_thread_id=${THREAD_ID}" 
-
+-d "message_thread_id=${THREAD_ID}" \
 -d "text=${MSG}" 
 
 -d "parse_mode=Markdown" > /dev/null
 }
-
-STREAMING_CHUNK: Defining the main menu UI...
 
 show_menu() {
 clear
@@ -109,8 +85,6 @@ echo -e "${YELLOW}11)${NC} Setup 5 AM Auto-Update (Bug Fix)"
 echo -e "${RED}0)${NC} Exit"
 echo -e "${CYAN}=================================================${NC}"
 }
-
-STREAMING_CHUNK: Adding Node installation functions...
 
 install_pasarguard() {
 echo -e "${YELLOW}Installing PasarGuard Node...${NC}"
@@ -147,8 +121,6 @@ fi
 echo -e "${GREEN}Running nload... (Press Ctrl+C to exit)${NC}"
 nload
 }
-
-STREAMING_CHUNK: Adding System Update and Configuration functions...
 
 update_system() {
 echo -e "${YELLOW}Updating system...${NC}"
@@ -205,17 +177,12 @@ send_tg_msg "✅ Action Completed: 3x-ui Panel installed."
 sleep 2
 }
 
-STREAMING_CHUNK: Fixing the 5 AM Auto-update bug via non-interactive apt flags...
-
 setup_auto_update() {
 echo -e "${YELLOW}Setting up reliable 5 AM Auto-Update & Upgrade...${NC}"
 send_tg_msg "⏳ Action Started: Configuring 5 AM Auto-Update..."
 
-# Remove old potentially faulty cron jobs relating to apt-get
 crontab -l 2>/dev/null | grep -v 'apt-get' | crontab -
 
-# Add new reliable, non-interactive cron job
-# Explanation: DEBIAN_FRONTEND=noninteractive and Dpkg::Options prevent the system from getting stuck on config prompts.
 CRON_CMD="0 5 * * * DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get update -y && DEBIAN_FRONTEND=noninteractive /usr/bin/apt-get -y -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade >> /var/log/auto-update.log 2>&1"
 
 (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -
@@ -227,8 +194,6 @@ sleep 4
 
 
 }
-
-STREAMING_CHUNK: Adding Security configurations...
 
 change_ssh_port() {
 echo -e "${YELLOW}Changing SSH Port...${NC}"
@@ -286,14 +251,8 @@ done
 
 }
 
-STREAMING_CHUNK: Initializing script sequence and main loop...
-
-Run startup configurations
-
 install_dependencies
 setup_telegram_topic
-
-Main loop
 
 while true; do
 show_menu
