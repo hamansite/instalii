@@ -20,7 +20,7 @@ fi
 }
 
 setup_telegram_topic() {
-if [[ "$BOT_TOKEN" == "YOUR_BOT_TOKEN" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
+if [[ "$BOT_TOKEN" == "8752327864:AAE7SgGLk345vU9czspxfxVy6VcKuueKNhA" \vert{}\vert{} -z "$BOT_TOKEN" ]]; then
 echo -e "${RED}Warning: BOT_TOKEN is not set. Telegram logging will be disabled.${NC}"
 sleep 2
 return
